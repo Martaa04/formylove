@@ -19,8 +19,9 @@
       · un enlace de SoundCloud (también privado/secreto)
         -> se ve el reproductor de SoundCloud
       · un archivo subido junto a esta página, p. ej. "audios/triste.mp3"
-  - Puedes poner los dos, solo uno, o ninguno: si los dos están
-    vacíos sale "Todavía la estoy practicando".
+  - Puedes poner los dos o solo uno. Si los dos están vacíos,
+    el sobre sale con el candado cerrado y no se puede abrir.
+    En cuanto pongas un enlace, el candado se abre solo.
   - Cada sobre tiene su propio enlace: tuweb.com/#triste,
     tuweb.com/#enamorado, etc. Usa esos enlaces para los QR.
   ============================================================
@@ -143,6 +144,21 @@ body {
 .env .mood { font-family: var(--f-display); font-style: italic; font-weight: 600; font-size: 1.45rem; line-height: 1.05; }
 .env.opened .seal { background: transparent; color: var(--rose); box-shadow: inset 0 0 0 1.5px var(--rose); }
 .env.opened { background: color-mix(in srgb, var(--sheet) 70%, var(--paper)); }
+.env.locked { background: transparent; box-shadow: none; border-style: dashed; cursor: default; }
+.env.locked:hover { transform: none; }
+.env.locked .seal { background: var(--rule); color: var(--ink-soft); box-shadow: none; }
+.env.locked .mood { color: var(--ink-soft); }
+.env.shake { animation: shake .4s ease; }
+@keyframes shake { 0%,100% { transform: none; } 25% { transform: translateX(-4px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-2px); } }
+.count { font-size: .85rem; color: var(--ink-soft); margin-top: -18px; }
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+  background: var(--ink); color: var(--paper); padding: 10px 18px; border-radius: 999px;
+  font-size: .92rem; box-shadow: var(--shadow); transition: opacity .25s, transform .25s;
+  max-width: calc(100vw - 32px); text-align: center;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* Carta */
 dialog {
@@ -216,11 +232,14 @@ footer em { font-family: var(--f-display); font-size: 1.1rem; }
     </div>
     <button class="random" id="random">No sé cómo me siento ♪</button>
   </div>
+  <div class="count" id="t-count"></div>
 
   <div id="groups"></div>
 
   <footer id="t-footer"></footer>
 </main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <dialog id="letter" aria-labelledby="l-mood">
   <article class="letter">
@@ -245,7 +264,8 @@ footer em { font-family: var(--f-display); font-size: 1.1rem; }
 
 const TEXTOS = {
   subtitulo: "Un recital solo para ti",
-  intro: "Cada sobre tiene una pieza que he aprendido y tocado para ti, y una cartita para acompañarla. Abre la que encaje con hoy. Si no lo sabes, deja que elija el piano.",
+  intro: "Cada sobre tiene una pieza que he aprendido y tocado para ti, y una cartita para acompañarla. Abre la que encaje con hoy. Si no lo sabes, deja que elija el piano. Los que tienen candado todavía los estoy practicando: cuando se abra, es que ya está lista.",
+  bloqueado: "Todavía no… la estoy practicando ♪",
   firma: "— yo",
   pie: "Tocado con amor, notas falladas incluidas.",
   sinAudio: "Todavía la estoy practicando. Vuelve pronto.",
@@ -259,6 +279,8 @@ const GRUPOS = {
   between: { nombre: "Entre medias",   sub: "para todo lo demás" }
 };
 
+// Los sobres sin video ni audio salen con el candado cerrado.
+// En cuanto les pongas un enlace, el candado se abre solo.
 const EMOCIONES = [
   // ---------- DÍAS DIFÍCILES ----------
   { id: "triste", estado: "triste", grupo: "heavy",
@@ -341,6 +363,25 @@ const EMOCIONES = [
 
 /* =============== FIN DE LO EDITABLE =============== */
 
+const disponible = e => !!(e.video || e.audio);
+const DISPONIBLES = EMOCIONES.filter(disponible);
+
+const ICONO_CERRADO = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
+const ICONO_ABIERTO = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.6-1.7"/></svg>`;
+
+// Mensajito flotante
+const toastEl = document.getElementById("toast");
+let toastTimer;
+function aviso(texto) {
+  toastEl.textContent = texto;
+  toastEl.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2600);
+}
+
+document.getElementById("t-count").textContent =
+  `${DISPONIBLES.length} de ${EMOCIONES.length} sobres desbloqueados`;
+
 // Textos generales
 document.getElementById("t-eyebrow").textContent = TEXTOS.subtitulo;
 document.getElementById("t-intro").textContent = TEXTOS.intro;
@@ -362,17 +403,23 @@ function pintar(filtro) {
   groupsEl.innerHTML = "";
   Object.entries(GRUPOS).forEach(([gid, g]) => {
     if (filtro !== "all" && filtro !== gid) return;
+    const delGrupo = EMOCIONES.filter(e => e.grupo === gid);
     const sec = document.createElement("section");
     sec.className = "group";
     sec.innerHTML = `<h2>${g.nombre}<span>${g.sub}</span></h2><div class="grid"></div>`;
     const grid = sec.querySelector(".grid");
-    EMOCIONES.filter(e => e.grupo === gid).forEach(e => {
+    delGrupo.forEach(e => {
+      const libre = disponible(e);
       const b = document.createElement("button");
-      b.className = "env" + (abiertos.has(e.id) ? " opened" : "");
+      b.className = "env" + (!libre ? " locked" : abiertos.has(e.id) ? " opened" : "");
       b.dataset.id = e.id;
-      b.setAttribute("aria-label", `Ábrelo cuando estés ${e.estado}`);
-      b.innerHTML = `<span class="seal" aria-hidden="true">♪</span><span class="when">Ábrelo cuando estés</span><span class="mood">${e.estado}</span>`;
-      b.addEventListener("click", () => { location.hash = e.id; });
+      b.setAttribute("aria-label", libre ? `Ábrelo cuando estés ${e.estado}` : `${e.estado}: todavía cerrado`);
+      b.innerHTML = `<span class="seal">${libre ? ICONO_ABIERTO : ICONO_CERRADO}</span><span class="when">Ábrelo cuando estés</span><span class="mood">${e.estado}</span>`;
+      b.addEventListener("click", () => {
+        if (libre) { location.hash = e.id; return; }
+        b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake");
+        aviso(TEXTOS.bloqueado);
+      });
       grid.appendChild(b);
     });
     groupsEl.appendChild(sec);
@@ -397,7 +444,7 @@ function idYouTube(url) {
 
 function abrirCarta(id) {
   const e = EMOCIONES.find(x => x.id === id);
-  if (!e) return;
+  if (!e || !disponible(e)) return;
   document.getElementById("l-mood").textContent = e.estado;
   document.getElementById("l-title").textContent = e.pieza;
   document.getElementById("l-meta").textContent = `${e.compositor} · ${e.tonalidad}`;
@@ -450,15 +497,20 @@ dlg.addEventListener("click", ev => { if (ev.target === dlg) cerrarCarta(); });
 dlg.addEventListener("cancel", ev => { ev.preventDefault(); cerrarCarta(); });
 
 document.getElementById("random").addEventListener("click", () => {
-  const e = EMOCIONES[Math.floor(Math.random() * EMOCIONES.length)];
+  if (!DISPONIBLES.length) { aviso(TEXTOS.bloqueado); return; }
+  const e = DISPONIBLES[Math.floor(Math.random() * DISPONIBLES.length)];
   location.hash = e.id;
 });
 
 // Enlaces directos tipo tuweb.com/#triste (para los QR)
 function ruta() {
   const id = decodeURIComponent(location.hash.slice(1));
-  if (id && EMOCIONES.some(e => e.id === id)) abrirCarta(id);
-  else if (dlg.open) dlg.close();
+  const e = id && EMOCIONES.find(x => x.id === id);
+  if (e && disponible(e)) abrirCarta(id);
+  else {
+    if (dlg.open) dlg.close();
+    if (e) { aviso(TEXTOS.bloqueado); history.replaceState(null, "", location.pathname + location.search); }
+  }
 }
 window.addEventListener("hashchange", ruta);
 ruta();
