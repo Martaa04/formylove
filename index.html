@@ -70,8 +70,8 @@ body {
 /* Cabecera sobre un pentagrama */
 .hero { display: grid; gap: 14px; padding-top: 8px; }
 .eyebrow {
-  font-size: .78rem; letter-spacing: .16em; text-transform: uppercase;
-  color: var(--ink-soft); font-weight: 500;
+  font-family: var(--f-hand); font-size: 1.5rem; line-height: 1.2;
+  color: var(--rose); max-width: 34ch; text-wrap: balance;
 }
 .staff { position: relative; padding-block: 14px; }
 .staff::before {
@@ -263,7 +263,7 @@ footer em { font-family: var(--f-display); font-size: 1.1rem; }
 /* =================== EDITA AQUÍ =================== */
 
 const TEXTOS = {
-  subtitulo: "Un recital solo para ti",
+  subtitulo: "No me gusta tocar música clásica, pero a ti te encanta, así que te he hecho un recital",
   intro: "Cada sobre tiene una pieza que he aprendido y tocado para ti, y una cartita para acompañarla. Abre la que encaje con hoy. Si no lo sabes, deja que elija el piano. Los que tienen candado todavía los estoy practicando: cuando se abra, es que ya está lista.",
   bloqueado: "Todavía no… la estoy practicando ♪",
   firma: "— yo",
