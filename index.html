@@ -11,12 +11,16 @@
     entre "EDITA AQUÍ" y "FIN DE LO EDITABLE".
   - Cada emoción tiene: id (lo que va en el enlace), estado,
     grupo, pieza, compositor, tonalidad, audio y carta.
-  - audio:
-      · "" (vacío)  -> sale "Todavía la estoy practicando"
+  - video (opcional):
+      · un enlace de YouTube (mejor "oculto"/unlisted)
+        -> se ve el vídeo dentro de la carta
+      · un archivo subido junto a esta página, p. ej. "videos/triste.mp4"
+  - audio (opcional):
       · un enlace de SoundCloud (también privado/secreto)
         -> se ve el reproductor de SoundCloud
       · un archivo subido junto a esta página, p. ej. "audios/triste.mp3"
-        -> reproductor normal
+  - Puedes poner los dos, solo uno, o ninguno: si los dos están
+    vacíos sale "Todavía la estoy practicando".
   - Cada sobre tiene su propio enlace: tuweb.com/#triste,
     tuweb.com/#enamorado, etc. Usa esos enlaces para los QR.
   ============================================================
@@ -172,8 +176,12 @@ dialog[open] .letter { animation: unfold .45s cubic-bezier(.2,.8,.2,1); }
   background: var(--rose); color: var(--sheet); font-size: .92rem; font-weight: 500;
 }
 .pending { font-size: .88rem; color: var(--ink-soft); font-style: italic; }
-audio, .sc { width: 100%; border: 0; border-radius: 6px; }
+audio, .sc, .vid { width: 100%; border: 0; border-radius: 6px; display: block; }
 .sc { height: 120px; }
+.vid { aspect-ratio: 16 / 9; max-width: 100%; height: auto; background: #000; }
+video.vid { object-fit: contain; }
+#l-media { display: grid; gap: 10px; }
+#l-media:empty { display: none; }
 .note {
   font-family: var(--f-hand); font-size: 1.45rem; line-height: 1.45; margin: 0;
   background: repeating-linear-gradient(to bottom, transparent 0 calc(1.45em - 1px), var(--rule) calc(1.45em - 1px) 1.45em);
@@ -225,7 +233,7 @@ footer em { font-family: var(--f-display); font-size: 1.1rem; }
       <div class="label">Te he tocado</div>
       <div class="title" id="l-title"></div>
       <div class="meta" id="l-meta"></div>
-      <div id="l-audio"></div>
+      <div id="l-media"></div>
     </div>
     <p class="note" id="l-note"></p>
     <p class="sign" id="l-sign"></p>
@@ -241,7 +249,8 @@ const TEXTOS = {
   firma: "— yo",
   pie: "Tocado con amor, notas falladas incluidas.",
   sinAudio: "Todavía la estoy practicando. Vuelve pronto.",
-  botonEscuchar: "▶ Escúchame tocarla"
+  botonEscuchar: "▶ Escúchame tocarla",
+  botonVideo: "▶ Mírame tocarla"
 };
 
 const GRUPOS = {
@@ -253,80 +262,80 @@ const GRUPOS = {
 const EMOCIONES = [
   // ---------- DÍAS DIFÍCILES ----------
   { id: "triste", estado: "triste", grupo: "heavy",
-    pieza: "Preludio en mi menor, Op. 28 n.º 4", compositor: "Chopin", tonalidad: "Mi menor · Largo", audio: "",
+    pieza: "Preludio en mi menor, Op. 28 n.º 4", compositor: "Chopin", tonalidad: "Mi menor · Largo", video: "", audio: "",
     carta: "Ven aquí. No tienes que explicarlo ni arreglarlo esta noche. Ponte esto, cierra los ojos y déjame estar contigo un ratito, aunque sea desde lejos." },
   { id: "corazon-roto", estado: "con el corazón roto", grupo: "heavy",
-    pieza: "Preludio en si menor, Op. 28 n.º 6", compositor: "Chopin", tonalidad: "Si menor · Lento assai", audio: "",
+    pieza: "Preludio en si menor, Op. 28 n.º 6", compositor: "Chopin", tonalidad: "Si menor · Lento assai", video: "", audio: "",
     carta: "Siento muchísimo que duela tanto. No puedo quitártelo, pero sí puedo quedarme. Esta es lenta a propósito, para que tú también puedas ir despacio." },
   { id: "solo", estado: "solo", grupo: "heavy",
-    pieza: "Vals en la menor, B. 150", compositor: "Chopin", tonalidad: "La menor", audio: "",
+    pieza: "Vals en la menor, B. 150", compositor: "Chopin", tonalidad: "La menor", video: "", audio: "",
     carta: "No estás tan solo como parece ahora mismo. Aprendí este vals entero pensando en ti, o sea que llevas semanas metido en mi cabeza. Y sigues ahí." },
   { id: "ansioso", estado: "ansioso", grupo: "heavy",
-    pieza: "Preludio en do mayor, BWV 846", compositor: "Bach", tonalidad: "Do mayor", audio: "",
+    pieza: "Preludio en do mayor, BWV 846", compositor: "Bach", tonalidad: "Do mayor", video: "", audio: "",
     carta: "Respira con esta. Es el mismo patrón una y otra vez, y no pasa nada malo en ella. Cuenta las notas si lo necesitas. Estaré aquí al final." },
   { id: "agobiado", estado: "agobiado", grupo: "heavy",
-    pieza: "Gymnopédie n.º 1", compositor: "Satie", tonalidad: "Re mayor · Lent et douloureux", audio: "",
+    pieza: "Gymnopédie n.º 1", compositor: "Satie", tonalidad: "Re mayor · Lent et douloureux", video: "", audio: "",
     carta: "Suéltalo todo tres minutos. La lista seguirá ahí después. Esta pieza es básicamente alguien caminando muy despacio a propósito. Camina con ella." },
   { id: "enfadado", estado: "enfadado", grupo: "heavy",
-    pieza: "Preludio en do menor, Op. 28 n.º 20", compositor: "Chopin", tonalidad: "Do menor · Largo", audio: "",
+    pieza: "Preludio en do menor, Op. 28 n.º 20", compositor: "Chopin", tonalidad: "Do menor · Largo", video: "", audio: "",
     carta: "Tienes derecho a estar furioso. Esta son todo acordes grandes y pesados, así que los he aporreado por ti. Que suene fuerte, y luego llámame si quieres desahogarte." },
   { id: "miedo", estado: "con miedo", grupo: "heavy",
-    pieza: "Arietta, Op. 12 n.º 1", compositor: "Grieg", tonalidad: "Mi bemol mayor", audio: "",
+    pieza: "Arietta, Op. 12 n.º 1", compositor: "Grieg", tonalidad: "Mi bemol mayor", video: "", audio: "",
     carta: "Sea lo que sea, no tienes que enfrentarte a ello solo. Esta es una canción pequeñita y valiente. Agárrate a ella como me agarrarías la mano." },
   { id: "inseguro", estado: "inseguro", grupo: "heavy",
-    pieza: "Träumerei, Op. 15 n.º 7", compositor: "Schumann", tonalidad: "Fa mayor", audio: "",
+    pieza: "Träumerei, Op. 15 n.º 7", compositor: "Schumann", tonalidad: "Fa mayor", video: "", audio: "",
     carta: "Ojalá pudieras verte como te veo yo, aunque fuera un minuto. Träumerei significa ensoñación, y tú eres gran parte de lo que sueño. Eres más que suficiente." },
   { id: "agotado", estado: "agotado", grupo: "heavy",
-    pieza: "Canción francesa antigua, Op. 39 n.º 16", compositor: "Chaikovski", tonalidad: "Sol menor", audio: "",
+    pieza: "Canción francesa antigua, Op. 39 n.º 16", compositor: "Chaikovski", tonalidad: "Sol menor", video: "", audio: "",
     carta: "Ya has hecho suficiente por hoy. Túmbate, ponte el móvil en el pecho y deja que esta te arrope. Descansar no es algo que tengas que ganarte." },
 
   // ---------- DÍAS BONITOS ----------
   { id: "feliz", estado: "feliz", grupo: "light",
-    pieza: "El alegre campesino, Op. 68 n.º 10", compositor: "Schumann", tonalidad: "Fa mayor · Frisch und munter", audio: "",
+    pieza: "El alegre campesino, Op. 68 n.º 10", compositor: "Schumann", tonalidad: "Fa mayor · Frisch und munter", video: "", audio: "",
     carta: "¡SÍ! Me encanta cuando estás así. Esta es puro rebote, así que súbele el volumen y luego cuéntame todo lo que ha hecho bonito el día." },
   { id: "emocionado", estado: "emocionado", grupo: "light",
-    pieza: "Arabesque, Op. 100 n.º 2", compositor: "Burgmüller", tonalidad: "La menor · Allegro scherzando", audio: "",
+    pieza: "Arabesque, Op. 100 n.º 2", compositor: "Burgmüller", tonalidad: "La menor · Allegro scherzando", video: "", audio: "",
     carta: "Cuéntamelo, cuéntamelo, cuéntamelo. Esta pieza corretea igual que tú cuando estás emocionado, que es una de mis cosas favoritas de ti." },
   { id: "enamorado", estado: "enamorado", grupo: "light",
-    pieza: "Para Elisa, WoO 59", compositor: "Beethoven", tonalidad: "La menor · Poco moto", audio: "",
+    pieza: "Para Elisa, WoO 59", compositor: "Beethoven", tonalidad: "La menor · Poco moto", video: "", audio: "",
     carta: "Esta también se escribió para alguien. Cada vez que la practicaba pensaba: él va a escuchar esto. Hola. Te quiero." },
   { id: "orgulloso", estado: "orgulloso de ti", grupo: "light",
-    pieza: "Sonatina en sol, Anh. 5 n.º 1", compositor: "Beethoven", tonalidad: "Sol mayor · Moderato", audio: "",
+    pieza: "Sonatina en sol, Anh. 5 n.º 1", compositor: "Beethoven", tonalidad: "Sol mayor · Moderato", video: "", audio: "",
     carta: "Estoy tan orgullosa de ti. Vergonzosamente orgullosa. Considera esto tu vuelta de honor. Te lo has ganado." },
   { id: "agradecido", estado: "agradecido", grupo: "light",
-    pieza: "Minueto en sol mayor", compositor: "Petzold (atribuido a Bach)", tonalidad: "Sol mayor", audio: "",
+    pieza: "Minueto en sol mayor", compositor: "Petzold (atribuido a Bach)", tonalidad: "Sol mayor", video: "", audio: "",
     carta: "Yo también estoy agradecida por ti. Por los martes aburridos y por los momentos grandes. Esto es un gracias sin palabras." },
   { id: "en-paz", estado: "en paz", grupo: "light",
-    pieza: "Preludio en la mayor, Op. 28 n.º 7", compositor: "Chopin", tonalidad: "La mayor · Andantino", audio: "",
+    pieza: "Preludio en la mayor, Op. 28 n.º 7", compositor: "Chopin", tonalidad: "La mayor · Andantino", video: "", audio: "",
     carta: "No te muevas. Quédate con esta sensación. Esta dura menos de un minuto, como una respiración profunda que se convirtió en música." },
   { id: "jugueton", estado: "juguetón", grupo: "light",
-    pieza: "Variaciones sobre «Ah vous dirai-je, Maman», K. 265", compositor: "Mozart", tonalidad: "Do mayor", audio: "",
+    pieza: "Variaciones sobre «Ah vous dirai-je, Maman», K. 265", compositor: "Mozart", tonalidad: "Do mayor", video: "", audio: "",
     carta: "Esta melodía la conoces. Es Estrellita, dónde estás, pero a Mozart se le fue un poco de las manos. Un poco como a nosotros cuando hacemos el tonto juntos." },
   { id: "esperanzado", estado: "esperanzado", grupo: "light",
-    pieza: "Sonata en do, K. 545, primer movimiento", compositor: "Mozart", tonalidad: "Do mayor · Allegro", audio: "",
+    pieza: "Sonata en do, K. 545, primer movimiento", compositor: "Mozart", tonalidad: "Do mayor · Allegro", video: "", audio: "",
     carta: "Viene algo bueno. Esta pieza suena a una mañana en la que ya sabes que el día va a salir bien." },
 
   // ---------- ENTRE MEDIAS ----------
   { id: "echandome-de-menos", estado: "echándome de menos", grupo: "between",
-    pieza: "Sonata «Claro de luna», primer movimiento", compositor: "Beethoven", tonalidad: "Do sostenido menor · Adagio sostenuto", audio: "",
+    pieza: "Sonata «Claro de luna», primer movimiento", compositor: "Beethoven", tonalidad: "Do sostenido menor · Adagio sostenuto", video: "", audio: "",
     carta: "Yo también te echo de menos. Cierra los ojos e imagina que estoy al piano y tú en el sofá detrás de mí, haciendo como que no me miras." },
   { id: "nostalgico", estado: "nostálgico", grupo: "between",
-    pieza: "De países y gentes lejanos, Op. 15 n.º 1", compositor: "Schumann", tonalidad: "Sol mayor", audio: "",
+    pieza: "De países y gentes lejanos, Op. 15 n.º 1", compositor: "Schumann", tonalidad: "Sol mayor", video: "", audio: "",
     carta: "Esta pieza parece una foto antigua. Gracias por todos nuestros recuerdos, y por todos los que todavía nos quedan por hacer." },
   { id: "sin-dormir", estado: "sin poder dormir", grupo: "between",
-    pieza: "Canción de cuna (Wiegenlied), Op. 49 n.º 4", compositor: "Brahms", tonalidad: "Mi bemol mayor", audio: "",
+    pieza: "Canción de cuna (Wiegenlied), Op. 49 n.º 4", compositor: "Brahms", tonalidad: "Mi bemol mayor", video: "", audio: "",
     carta: "A la cama, amor. Esto es literalmente una nana. Luces apagadas, volumen bajito y piensa en algo bonito. A lo mejor en mí." },
   { id: "dandole-vueltas", estado: "dándole vueltas a todo", grupo: "between",
-    pieza: "Gnossienne n.º 1", compositor: "Satie", tonalidad: "Fa menor · Lent", audio: "",
+    pieza: "Gnossienne n.º 1", compositor: "Satie", tonalidad: "Fa menor · Lent", video: "", audio: "",
     carta: "Tu cabeza está haciendo lo de siempre. Esta pieza da vueltas sin llegar nunca del todo a ningún sitio, y no pasa nada. No tienes que resolverlo todo esta noche." },
   { id: "aburrido", estado: "aburrido", grupo: "between",
-    pieza: "Escocesa en sol, WoO 23", compositor: "Beethoven", tonalidad: "Sol mayor", audio: "",
+    pieza: "Escocesa en sol, WoO 23", compositor: "Beethoven", tonalidad: "Sol mayor", video: "", audio: "",
     carta: "¿Aburrido? Toma un minuto de Beethoven pícaro. Y ahora escríbeme, que seguramente yo también me estoy aburriendo." },
   { id: "enfadado-conmigo", estado: "enfadado conmigo", grupo: "between",
-    pieza: "Sonata «Patética», segundo movimiento", compositor: "Beethoven", tonalidad: "La bemol mayor · Adagio cantabile", audio: "",
+    pieza: "Sonata «Patética», segundo movimiento", compositor: "Beethoven", tonalidad: "La bemol mayor · Adagio cantabile", video: "", audio: "",
     carta: "Si estás abriendo esto, seguramente hemos discutido. Te sigo queriendo, entero. Escucha esto y luego ven a buscarme para arreglarlo juntos." },
   { id: "hecho-un-lio", estado: "hecho un lío", grupo: "between",
-    pieza: "Dulce ensueño, Op. 39 n.º 21", compositor: "Chaikovski", tonalidad: "Do mayor", audio: "",
+    pieza: "Dulce ensueño, Op. 39 n.º 21", compositor: "Chaikovski", tonalidad: "Do mayor", video: "", audio: "",
     carta: "¿No sabes muy bien qué sientes? Está permitido. Esta es dulce y un poco indecisa, como algunos de nuestros días más bonitos y más caóticos." }
 ];
 
@@ -380,6 +389,11 @@ document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () =
 const dlg = document.getElementById("letter");
 function esArchivo(a) { return /\.(mp3|m4a|wav|ogg|aac)$/i.test(a) && !/^https?:/i.test(a); }
 function esSoundCloud(a) { return /soundcloud\.com/i.test(a); }
+function esVideoArchivo(v) { return /\.(mp4|webm|mov|m4v)$/i.test(v) && !/^https?:/i.test(v); }
+function idYouTube(url) {
+  const r = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/))([\w-]{11})/i);
+  return r ? r[1] : null;
+}
 
 function abrirCarta(id) {
   const e = EMOCIONES.find(x => x.id === id);
@@ -389,18 +403,36 @@ function abrirCarta(id) {
   document.getElementById("l-meta").textContent = `${e.compositor} · ${e.tonalidad}`;
   document.getElementById("l-note").textContent = e.carta;
 
-  const a = document.getElementById("l-audio");
-  if (!e.audio) {
-    a.innerHTML = `<span class="pending">${TEXTOS.sinAudio}</span>`;
-  } else if (esArchivo(e.audio)) {
-    a.innerHTML = `<audio controls preload="none" src="${e.audio}"></audio>`;
-  } else if (esSoundCloud(e.audio)) {
-    const src = "https://w.soundcloud.com/player/?url=" + encodeURIComponent(e.audio) +
-                "&color=%23b84a6e&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&visual=false";
-    a.innerHTML = `<iframe class="sc" allow="autoplay" src="${src}" title="Grabación de ${e.pieza}"></iframe>`;
-  } else {
-    a.innerHTML = `<a class="listen" href="${e.audio}" target="_blank" rel="noopener">${TEXTOS.botonEscuchar}</a>`;
+  const m = document.getElementById("l-media");
+  let html = "";
+
+  // Vídeo
+  if (e.video) {
+    const yt = idYouTube(e.video);
+    if (yt) {
+      html += `<iframe class="vid" src="https://www.youtube-nocookie.com/embed/${yt}?rel=0" title="Vídeo de ${e.pieza}" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+    } else if (esVideoArchivo(e.video)) {
+      html += `<video class="vid" controls playsinline preload="metadata" src="${e.video}"></video>`;
+    } else {
+      html += `<a class="listen" href="${e.video}" target="_blank" rel="noopener">${TEXTOS.botonVideo}</a>`;
+    }
   }
+
+  // Audio
+  if (e.audio) {
+    if (esArchivo(e.audio)) {
+      html += `<audio controls preload="none" src="${e.audio}"></audio>`;
+    } else if (esSoundCloud(e.audio)) {
+      const src = "https://w.soundcloud.com/player/?url=" + encodeURIComponent(e.audio) +
+                  "&color=%23b84a6e&auto_play=false&hide_related=true&show_comments=false&show_user=false&show_reposts=false&visual=false";
+      html += `<iframe class="sc" allow="autoplay" src="${src}" title="Grabación de ${e.pieza}"></iframe>`;
+    } else {
+      html += `<a class="listen" href="${e.audio}" target="_blank" rel="noopener">${TEXTOS.botonEscuchar}</a>`;
+    }
+  }
+
+  if (!html) html = `<span class="pending">${TEXTOS.sinAudio}</span>`;
+  m.innerHTML = html;
 
   if (!dlg.open) dlg.showModal();
   recordar(id);
@@ -409,7 +441,7 @@ function abrirCarta(id) {
 }
 
 function cerrarCarta() {
-  document.getElementById("l-audio").innerHTML = ""; // para que pare la música
+  document.getElementById("l-media").innerHTML = ""; // para que pare la música y el vídeo
   if (dlg.open) dlg.close();
   if (location.hash) history.replaceState(null, "", location.pathname + location.search);
 }
